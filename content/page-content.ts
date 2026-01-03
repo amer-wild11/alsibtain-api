@@ -119,8 +119,8 @@ export const pagesContent = [
         happyCustomers: { type: 'number', value: '' },
         provinces: { type: 'number', value: '' },
         caption: { type: 'textarea', value: { ar: '', en: '' } },
-        image1: { type: 'image', value: '' },
-        image2: { type: 'image', value: '' },
+        image1: { type: 'image', value: { url: '', fileId: '' } },
+        image2: { type: 'image', value: { url: '', fileId: '' } },
       },
       callToAction: {
         caption: { type: 'textarea', value: { ar: '', en: '' } },
