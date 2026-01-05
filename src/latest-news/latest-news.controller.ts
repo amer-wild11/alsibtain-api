@@ -43,7 +43,32 @@ export class LatestNewsController {
     @Body() data: CreateLatestNewsDto,
     @UploadedFile() thumbnail: Express.Multer.File,
   ) {
-    return this.latestNewsService.create(data, thumbnail);
+    // Parse multilingual fields from string to object if needed
+    try {
+      const title =
+        typeof data.title === 'string' ? JSON.parse(data.title) : data.title;
+      const writtenBy =
+        typeof data.writtenBy === 'string'
+          ? JSON.parse(data.writtenBy)
+          : data.writtenBy;
+      const caption =
+        typeof data.caption === 'string'
+          ? JSON.parse(data.caption)
+          : data.caption;
+      const category =
+        typeof data.category === 'string'
+          ? JSON.parse(data.category)
+          : data.category;
+
+      return this.latestNewsService.create(
+        { ...data, title, writtenBy, caption, category },
+        thumbnail,
+      );
+    } catch (err) {
+      throw new BadRequestException(
+        'Invalid JSON format for multilingual fields',
+      );
+    }
   }
 
   @UseGuards(AuthGuard('jwt'))
@@ -54,7 +79,34 @@ export class LatestNewsController {
     @Body() data: UpdateLatestNewsDto,
     @UploadedFile() thumbnail?: Express.Multer.File,
   ) {
-    return this.latestNewsService.update(id, data, thumbnail);
+    try {
+      const title =
+        data.title && typeof data.title === 'string'
+          ? JSON.parse(data.title)
+          : data.title;
+      const writtenBy =
+        data.writtenBy && typeof data.writtenBy === 'string'
+          ? JSON.parse(data.writtenBy)
+          : data.writtenBy;
+      const caption =
+        data.caption && typeof data.caption === 'string'
+          ? JSON.parse(data.caption)
+          : data.caption;
+      const category =
+        data.category && typeof data.category === 'string'
+          ? JSON.parse(data.category)
+          : data.category;
+
+      return this.latestNewsService.update(
+        id,
+        { ...data, title, writtenBy, caption, category },
+        thumbnail,
+      );
+    } catch (err) {
+      throw new BadRequestException(
+        'Invalid JSON format for multilingual fields',
+      );
+    }
   }
 
   @UseGuards(AuthGuard('jwt'))

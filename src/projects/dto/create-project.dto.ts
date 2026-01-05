@@ -1,31 +1,81 @@
-import { IsString, IsOptional } from 'class-validator';
+import { Transform, Type } from 'class-transformer';
+import {
+  IsString,
+  IsOptional,
+  ValidateNested,
+  IsNotEmpty,
+  IsBoolean,
+} from 'class-validator';
+
+export class LangForm {
+  @IsOptional()
+  @IsString()
+  ar?: string;
+
+  @IsOptional()
+  @IsString()
+  en?: string;
+}
 
 export class CreateProjectDto {
-  @IsString()
-  name: string;
+  @IsNotEmpty()
+  @Transform(({ value }) =>
+    typeof value === 'string' ? JSON.parse(value) : value,
+  )
+  @ValidateNested()
+  @Type(() => LangForm)
+  name: LangForm;
 
-  @IsString()
-  caption: string;
+  @IsNotEmpty()
+  @Transform(({ value }) =>
+    typeof value === 'string' ? JSON.parse(value) : value,
+  )
+  @ValidateNested()
+  @Type(() => LangForm)
+  caption: LangForm;
 
-  @IsString()
-  projectFullName: string;
+  @IsNotEmpty()
+  @Transform(({ value }) =>
+    typeof value === 'string' ? JSON.parse(value) : value,
+  )
+  @ValidateNested()
+  @Type(() => LangForm)
+  projectFullName: LangForm;
 
-  @IsString()
-  location?: string;
+  @IsNotEmpty()
+  @Transform(({ value }) =>
+    typeof value === 'string' ? JSON.parse(value) : value,
+  )
+  @ValidateNested()
+  @Type(() => LangForm)
+  location: LangForm;
 
+  @IsNotEmpty()
   @IsString()
-  totalArea?: string;
+  totalArea: string;
 
+  @IsNotEmpty()
   @IsString()
-  totalResidentialUnits?: string;
+  totalResidentialUnits: string;
 
-  @IsString()
-  unitType?: string;
+  @IsNotEmpty()
+  @Transform(({ value }) =>
+    typeof value === 'string' ? JSON.parse(value) : value,
+  )
+  @ValidateNested()
+  @Type(() => LangForm)
+  unitType: LangForm;
 
-  @IsString()
-  description?: string;
+  @IsNotEmpty()
+  @Transform(({ value }) =>
+    typeof value === 'string' ? JSON.parse(value) : value,
+  )
+  @ValidateNested()
+  @Type(() => LangForm)
+  description: LangForm;
 
-  @IsString()
   @IsOptional()
+  @IsBoolean()
+  @Transform(({ value }) => value === 'true' || value === true)
   showUrukCity360?: boolean;
 }

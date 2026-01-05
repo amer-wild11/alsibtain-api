@@ -18,11 +18,14 @@ export class JobService {
     @InjectModel(Category.name) private readonly categoryModel: Model<Category>,
   ) {}
 
+  // ---------------- CREATE JOB ----------------
   async createJob(createJobDto: CreateJobDto) {
     if (!isValidObjectId(createJobDto.category))
       throw new BadRequestException('Job category id is not valid');
+
     const category = await this.categoryModel.findById(createJobDto.category);
     if (!category) throw new NotFoundException('Category is not found');
+
     const job = await this.jobModel.create({
       ...createJobDto,
       category: new Types.ObjectId(createJobDto.category),
@@ -35,6 +38,7 @@ export class JobService {
     };
   }
 
+  // ---------------- GET ALL JOBS ----------------
   async getAllJobs(
     paginationDto?: PaginationDto,
     search?: string,
@@ -47,11 +51,20 @@ export class JobService {
     const skip = (page - 1) * limit;
 
     const matchQuery: any = {};
-    if (search) matchQuery.title = { $regex: search, $options: 'i' };
-    if (categoryIds?.length)
+
+    // Search by title (ar/en)
+    if (search) {
+      matchQuery.$or = [
+        { 'title.ar': { $regex: search, $options: 'i' } },
+        { 'title.en': { $regex: search, $options: 'i' } },
+      ];
+    }
+
+    if (categoryIds?.length) {
       matchQuery.category = {
         $in: categoryIds.map((id) => new Types.ObjectId(id)),
       };
+    }
 
     const jobs = await this.jobModel.aggregate([
       { $match: matchQuery },
@@ -88,6 +101,7 @@ export class JobService {
     };
   }
 
+  // ---------------- GET JOB BY ID ----------------
   async getJobById(id: string) {
     if (!isValidObjectId(id)) {
       throw new BadRequestException('Invalid job id');
@@ -121,6 +135,7 @@ export class JobService {
     return job[0];
   }
 
+  // ---------------- UPDATE JOB ----------------
   async updateJob(id: string, updateJobDto: UpdateJobDto) {
     if (!isValidObjectId(id)) {
       throw new BadRequestException('Invalid job id');
@@ -128,10 +143,18 @@ export class JobService {
 
     const updateData: any = { ...updateJobDto };
 
+    // Transform category to ObjectId if provided
     if (updateData.category) {
+      if (!isValidObjectId(updateData.category))
+        throw new BadRequestException('Job category id is not valid');
+
+      const category = await this.categoryModel.findById(updateData.category);
+      if (!category) throw new NotFoundException('Category not found');
+
       updateData.category = new Types.ObjectId(updateData.category);
     }
 
+    // Update the job
     const job = await this.jobModel.findByIdAndUpdate(id, updateData, {
       new: true,
     });
@@ -146,6 +169,7 @@ export class JobService {
     };
   }
 
+  // ---------------- DELETE JOB ----------------
   async deleteJob(id: string) {
     if (!isValidObjectId(id)) {
       throw new BadRequestException('Invalid job id');

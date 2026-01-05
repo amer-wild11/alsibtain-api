@@ -9,18 +9,8 @@ import { Model, isValidObjectId } from 'mongoose';
 import { Employee } from './schema/employee.schema';
 import { CreateEmployeeDto } from './dto/create-employee.dto';
 import { UpdateEmployeeDto } from './dto/update-employee.dto';
-import { IsMongoId, IsNumber, IsNotEmpty } from 'class-validator';
 import { ImageKitService } from 'src/image-kit/image-kit.service';
 
-export class ReorderEmployeeDto {
-  @IsMongoId()
-  @IsNotEmpty()
-  employee: string;
-
-  @IsNumber()
-  @IsNotEmpty()
-  order: number;
-}
 @Injectable()
 export class EmployeesService {
   constructor(
@@ -29,33 +19,30 @@ export class EmployeesService {
     private readonly imageKitService: ImageKitService,
   ) {}
 
-  async getAll(params: {
-    keywords?: string;
-    fields?: string[];
-    page?: number;
-    limit?: number;
-  }) {
-    const { keywords, fields, page = 1, limit = 10 } = params;
+  async getAll(params: { keywords?: string; page?: number; limit?: number }) {
+    const { keywords, page = 1, limit = 10 } = params;
 
     const skip = (page - 1) * limit;
 
-    const matchStage =
-      fields && keywords
-        ? {
-            $or: fields.map((field) => ({
-              [field]: { $regex: keywords, $options: 'i' },
-            })),
-          }
-        : {};
+    const matchQuery: any = {};
+
+    if (keywords) {
+      matchQuery.$or = [
+        { 'name.ar': { $regex: keywords, $options: 'i' } },
+        { 'name.en': { $regex: keywords, $options: 'i' } },
+        { 'position.ar': { $regex: keywords, $options: 'i' } },
+        { 'position.en': { $regex: keywords, $options: 'i' } },
+      ];
+    }
 
     const [data, total] = await Promise.all([
       this.employeeModel
-        .find(matchStage)
-        .sort({ createdAt: -1 })
+        .find(matchQuery)
+        .sort({ order: 1 })
         .skip(skip)
         .limit(limit)
         .exec(),
-      this.employeeModel.countDocuments(matchStage),
+      this.employeeModel.countDocuments(matchQuery),
     ]);
 
     return {
@@ -72,6 +59,7 @@ export class EmployeesService {
       throw new BadRequestException('Employee id is not valid');
 
     const employee = await this.employeeModel.findById(id).exec();
+
     if (!employee) throw new NotFoundException('Employee not found');
 
     return {
@@ -84,28 +72,23 @@ export class EmployeesService {
     if (!image) throw new BadRequestException('Employee image is required');
 
     try {
-      // Upload image to Cloudinary
-
       const { fileId, url } = await this.imageKitService.upload(image, {
-        folder: '/team',
+        folder: '/employees',
       });
 
-      // Find the current max order
       const lastEmployee = await this.employeeModel
         .findOne()
         .sort({ order: -1 })
         .select('order')
         .exec();
-      const newOrder = lastEmployee ? lastEmployee.order + 1 : 1;
 
-      // Create employee with the correct order
+      const order = lastEmployee ? lastEmployee.order + 1 : 1;
+
       const employee = await this.employeeModel.create({
-        ...data,
-        order: newOrder,
-        image: {
-          fileId,
-          url,
-        },
+        name: data.name,
+        position: data.position,
+        order,
+        image: { fileId, url },
       });
 
       return {
@@ -125,28 +108,27 @@ export class EmployeesService {
     if (!isValidObjectId(id))
       throw new BadRequestException('Employee id is not valid');
 
-    const employee = await this.employeeModel
-      .findById(id)
-      .select('_id image')
-      .exec();
+    const employee = await this.employeeModel.findById(id).exec();
 
     if (!employee) throw new NotFoundException('Employee not found');
 
-    let dataToUpdate: UpdateEmployeeDto & {
-      image?: { fileId?: string; url?: string };
-    } = { ...data };
+    const updateData: any = {
+      ...(data.name && { name: data.name }),
+      ...(data.position && { position: data.position }),
+      ...(data.order !== undefined && { order: data.order }),
+    };
 
     if (image) {
       try {
-        // delete old image
-        if (employee.image?.url) {
+        if (employee.image?.fileId) {
           await this.imageKitService.deleteFile(employee.image.fileId);
         }
-        // upload new image
+
         const { fileId, url } = await this.imageKitService.upload(image, {
-          folder: 'employees/images',
+          folder: '/employees',
         });
-        dataToUpdate.image = { url, fileId };
+
+        updateData.image = { fileId, url };
       } catch (error) {
         throw new InternalServerErrorException(error.message);
       }
@@ -154,7 +136,7 @@ export class EmployeesService {
 
     const updatedEmployee = await this.employeeModel.findByIdAndUpdate(
       id,
-      dataToUpdate,
+      updateData,
       { new: true },
     );
 
@@ -168,10 +150,7 @@ export class EmployeesService {
     if (!isValidObjectId(id))
       throw new BadRequestException('Employee id is not valid');
 
-    const employee = await this.employeeModel
-      .findById(id)
-      .select('_id image')
-      .exec();
+    const employee = await this.employeeModel.findById(id).exec();
 
     if (!employee) throw new NotFoundException('Employee not found');
 
@@ -186,33 +165,25 @@ export class EmployeesService {
     };
   }
 
-  async reorderEmployees(reorderData: { employee: string; order: number }[]) {
-    if (!Array.isArray(reorderData) || reorderData.length === 0) {
-      throw new BadRequestException('Reorder data must be a non-empty array');
-    }
+  async reorderEmployees(data: { employee: string; order: number }[]) {
+    if (!Array.isArray(data) || data.length === 0)
+      throw new BadRequestException('Invalid reorder payload');
 
-    // Validate IDs
-    reorderData.forEach((item) => {
+    data.forEach((item) => {
       if (!isValidObjectId(item.employee)) {
         throw new BadRequestException(`Invalid employee ID: ${item.employee}`);
       }
     });
 
-    // Bulk update all employees with new order
-    const bulkOps = reorderData.map((item) => ({
+    const bulkOps = data.map((item) => ({
       updateOne: {
         filter: { _id: item.employee },
         update: { $set: { order: item.order } },
       },
     }));
 
-    try {
-      await this.employeeModel.bulkWrite(bulkOps as any);
-    } catch (error) {
-      throw new InternalServerErrorException('Failed to reorder employees');
-    }
+    await this.employeeModel.bulkWrite(bulkOps as any);
 
-    // Return updated employees sorted by order
     const employees = await this.employeeModel.find().sort({ order: 1 }).exec();
 
     return {

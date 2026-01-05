@@ -12,6 +12,7 @@ import {
 import { PaginationDto } from 'src/common/pagination.dto';
 import { CreateTestimonialDto } from './dto/create-testimonia.dto';
 import { ImageKitService } from 'src/image-kit/image-kit.service';
+import { validateLangFields } from 'src/common/helpers';
 
 @Injectable()
 export class TestimonialsService {
@@ -31,7 +32,10 @@ export class TestimonialsService {
 
     const matchQuery = search
       ? {
-          clientType: { $regex: search, $options: 'i' },
+          clientType: {
+            en: { $regex: search, $options: 'i' },
+            ar: { $regex: search, $options: 'i' },
+          },
         }
       : {};
 
@@ -69,67 +73,108 @@ export class TestimonialsService {
   }
 
   async create(data: CreateTestimonialDto, image: Express.Multer.File) {
-    if (!image) throw new BadRequestException('Image is required');
-    if (!this.imagekitService.isImage(image))
-      throw new BadRequestException('Image is not valid.');
+    if (!image) {
+      throw new BadRequestException({
+        message: 'Validation failed',
+        fieldErrors: {
+          image: ['Image is required'],
+        },
+      });
+    }
+
+    if (!this.imagekitService.isImage(image)) {
+      throw new BadRequestException({
+        message: 'Validation failed',
+        fieldErrors: {
+          image: ['Image is not valid'],
+        },
+      });
+    }
+
+    validateLangFields(data, ['clientType', 'testimonial']);
 
     const { url, fileId } = await this.imagekitService.upload(image, {
       folder: 'testimonials/images',
     });
 
-    const testi = await this.testimonialModel.create({
+    const testimonial = await this.testimonialModel.create({
       ...data,
       image: { url, fileId },
     });
 
     return {
-      message: 'Testimonial have been created successfully.',
-      testimonial: testi,
+      message: 'Testimonial has been created successfully.',
+      testimonial,
     };
   }
 
-  async update(
-    id: string,
-    data: Partial<CreateTestimonialDto>,
-    image?: Express.Multer.File,
-  ) {
-    if (!Types.ObjectId.isValid(id)) {
-      throw new BadRequestException('Invalid testimonial id');
-    }
+ async update(
+  id: string,
+  data: Partial<CreateTestimonialDto>,
+  image?: Express.Multer.File,
+) {
+  if (!Types.ObjectId.isValid(id)) {
+    throw new BadRequestException('Invalid testimonial id');
+  }
 
-    const testimonial = await this.testimonialModel.findById(id).exec();
-    if (!testimonial) {
-      throw new NotFoundException('Testimonial not found');
-    }
+  const testimonial = await this.testimonialModel.findById(id).exec();
+  if (!testimonial) {
+    throw new NotFoundException('Testimonial not found');
+  }
 
-    let imageData = testimonial.image;
-
-    if (image) {
-      if (!this.imagekitService.isImage(image)) {
-        throw new BadRequestException('Image is not valid.');
+  ['clientType', 'location', 'testimonial'].forEach((field) => {
+    if (data[field] && typeof data[field] === 'string') {
+      try {
+        data[field] = JSON.parse(data[field] as string);
+      } catch {
+        throw new BadRequestException({
+          message: 'Validation failed',
+          fieldErrors: { [field]: ['Invalid JSON format'] },
+        });
       }
-      if (imageData?.fileId) {
-        await this.imagekitService.deleteFile(imageData.fileId);
-      }
-      const { url, fileId } = await this.imagekitService.upload(image, {
-        folder: 'testimonials/images',
+    }
+  });
+
+  validateLangFields(data, ['clientType', 'testimonial'], {
+    isUpdate: true,
+  });
+
+  let imageData = testimonial.image;
+
+  if (image) {
+    if (!this.imagekitService.isImage(image)) {
+      throw new BadRequestException({
+        message: 'Validation failed',
+        fieldErrors: {
+          image: ['Image is not valid'],
+        },
       });
-      imageData = { url, fileId };
     }
 
-    const updatedTestimonial = await this.testimonialModel
-      .findByIdAndUpdate(
-        id,
-        { ...data, image: imageData },
-        { new: true, runValidators: true },
-      )
-      .exec();
+    if (imageData?.fileId) {
+      await this.imagekitService.deleteFile(imageData.fileId);
+    }
 
-    return {
-      message: 'Testimonial has been updated successfully.',
-      testimonial: updatedTestimonial,
-    };
+    const { url, fileId } = await this.imagekitService.upload(image, {
+      folder: 'testimonials/images',
+    });
+
+    imageData = { url, fileId };
   }
+
+  const updatedTestimonial = await this.testimonialModel
+    .findByIdAndUpdate(
+      id,
+      { ...data, image: imageData },
+      { new: true, runValidators: true },
+    )
+    .exec();
+
+  return {
+    message: 'Testimonial has been updated successfully.',
+    testimonial: updatedTestimonial,
+  };
+}
 
   async delete(id: string) {
     if (!Types.ObjectId.isValid(id)) {

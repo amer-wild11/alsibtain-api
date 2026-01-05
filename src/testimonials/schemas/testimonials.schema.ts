@@ -12,16 +12,42 @@ export class Testimonial {
   })
   image: { fileId: string; url: string };
 
-  @Prop({ required: true })
-  clientType: string;
+  @Prop({
+    required: true,
+    type: {
+      ar: String,
+      en: String,
+    },
+  })
+  clientType: {
+    en: string;
+    ar: string;
+  };
 
-  @Prop()
-  location: string;
+  @Prop({
+    type: {
+      en: String,
+      ar: String,
+    },
+  })
+  location: {
+    en: String;
+    ar: String;
+  };
 
-  @Prop({ required: true })
-  testimonial: string;
+  @Prop({
+    required: true,
+    type: {
+      en: String,
+      ar: String,
+    },
+  })
+  testimonial: {
+    en: String;
+    ar: String;
+  };
 
-  @Prop({ type: String, required: true })
+  @Prop({ type: String, required: true, default: 5 })
   stars: string;
 }
 

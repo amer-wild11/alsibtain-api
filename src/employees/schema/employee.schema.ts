@@ -4,10 +4,22 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
   timestamps: true,
 })
 export class Employee {
-  @Prop({ required: true })
-  name: string;
-  @Prop({ required: false })
-  position: string;
+  @Prop({
+    required: true,
+    type: {
+      ar: String,
+      en: String,
+    },
+  })
+  name: { ar: string; en: string };
+  @Prop({
+    required: false,
+    type: {
+      ar: String,
+      en: String,
+    },
+  })
+  position: { ar: string; en: string };
   @Prop({
     required: true,
     type: {

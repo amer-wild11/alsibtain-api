@@ -1,19 +1,36 @@
+import { Transform, Type } from 'class-transformer';
 import {
   IsDateString,
   IsInt,
   IsNotEmpty,
   IsOptional,
   IsString,
+  ValidateNested,
 } from 'class-validator';
 
-export class CreateJobDto {
+// Generic LangForm for ar/en fields
+export class LangForm {
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  title: string;
+  ar?: string;
 
+  @IsOptional()
   @IsString()
+  en?: string;
+}
+
+export class CreateJobDto {
   @IsNotEmpty()
-  experience: string;
+  @Transform(({ value }) => (typeof value === 'string' ? JSON.parse(value) : value))
+  @ValidateNested()
+  @Type(() => LangForm)
+  title: LangForm;
+
+  @IsNotEmpty()
+  @Transform(({ value }) => (typeof value === 'string' ? JSON.parse(value) : value))
+  @ValidateNested()
+  @Type(() => LangForm)
+  experience: LangForm;
 
   @IsDateString()
   @IsNotEmpty()
@@ -24,24 +41,34 @@ export class CreateJobDto {
   category: string;
 
   @IsOptional()
-  @IsString()
-  description?: string;
+  @Transform(({ value }) => (typeof value === 'string' ? JSON.parse(value) : value))
+  @ValidateNested()
+  @Type(() => LangForm)
+  description?: LangForm;
 
   @IsOptional()
-  @IsString()
-  location?: string;
+  @Transform(({ value }) => (typeof value === 'string' ? JSON.parse(value) : value))
+  @ValidateNested()
+  @Type(() => LangForm)
+  location?: LangForm;
 
   @IsOptional()
-  @IsString()
-  jobType?: string;
+  @Transform(({ value }) => (typeof value === 'string' ? JSON.parse(value) : value))
+  @ValidateNested()
+  @Type(() => LangForm)
+  jobType?: LangForm;
 
   @IsOptional()
-  @IsString()
-  workingHours?: string;
+  @Transform(({ value }) => (typeof value === 'string' ? JSON.parse(value) : value))
+  @ValidateNested()
+  @Type(() => LangForm)
+  workingHours?: LangForm;
 
   @IsOptional()
-  @IsString()
-  workingDays?: string;
+  @Transform(({ value }) => (typeof value === 'string' ? JSON.parse(value) : value))
+  @ValidateNested()
+  @Type(() => LangForm)
+  workingDays?: LangForm;
 
   @IsOptional()
   @IsInt()

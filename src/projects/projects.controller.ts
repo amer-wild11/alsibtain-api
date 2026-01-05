@@ -23,15 +23,16 @@ export class ProjectsController {
   constructor(private readonly projectsService: ProjectsService) {}
 
   @Get()
-  async getAllProjects(@Query('search') search: string) {
+  getAllProjects(@Query('search') search?: string) {
     return this.projectsService.getAllProjects(search);
   }
 
   @Get(':id')
-  async getProjectById(@Param('id') id: string) {
+  getProjectById(@Param('id') id: string) {
     return this.projectsService.getProjectById(id);
   }
 
+  // ✅ CREATE
   @Post()
   @UseGuards(AuthGuard('jwt'))
   @UseInterceptors(
@@ -40,9 +41,11 @@ export class ProjectsController {
       { name: 'background', maxCount: 1 },
       { name: 'thumbnail', maxCount: 1 },
       { name: 'video', maxCount: 1 },
+      { name: 'imageGallery', maxCount: 20 },
+      { name: 'videoGallery', maxCount: 10 },
     ]),
   )
-  async createProject(
+  createProject(
     @Body() body: CreateProjectDto,
     @UploadedFiles()
     files: {
@@ -50,17 +53,14 @@ export class ProjectsController {
       background?: Express.Multer.File[];
       thumbnail?: Express.Multer.File[];
       video?: Express.Multer.File[];
+      imageGallery?: Express.Multer.File[];
+      videoGallery?: Express.Multer.File[];
     },
   ) {
-    return this.projectsService.createProject(
-      body,
-      files.logo?.[0]!,
-      files.background?.[0]!,
-      files.thumbnail?.[0]!,
-      files.video?.[0]!,
-    );
+    return this.projectsService.createProject(body, files);
   }
 
+  // ✅ UPDATE
   @Put(':id')
   @UseGuards(AuthGuard('jwt'))
   @UseInterceptors(
@@ -69,9 +69,11 @@ export class ProjectsController {
       { name: 'background', maxCount: 1 },
       { name: 'thumbnail', maxCount: 1 },
       { name: 'video', maxCount: 1 },
+      { name: 'imageGallery', maxCount: 20 },
+      { name: 'videoGallery', maxCount: 10 },
     ]),
   )
-  async updateProject(
+  updateProject(
     @Param('id') id: string,
     @Body() body: UpdateProjectDto,
     @UploadedFiles()
@@ -80,21 +82,32 @@ export class ProjectsController {
       background?: Express.Multer.File[];
       thumbnail?: Express.Multer.File[];
       video?: Express.Multer.File[];
+      imageGallery?: Express.Multer.File[];
+      videoGallery?: Express.Multer.File[];
     },
   ) {
-    return this.projectsService.updateProject(
-      id,
-      body,
-      files.logo?.[0]!,
-      files.background?.[0]!,
-      files.thumbnail?.[0]!,
-      files.video?.[0]!,
+    return this.projectsService.updateProject(id, body, files);
+  }
+
+  // ✅ REMOVE SINGLE GALLERY ITEM
+  @Delete(':id/gallery/:galleryType/:fileId')
+  @UseGuards(AuthGuard('jwt'))
+  removeGalleryItem(
+    @Param('id') projectId: string,
+    @Param('galleryType') galleryType: 'imageGallery' | 'videoGallery',
+    @Param('fileId') fileId: string,
+  ) {
+    return this.projectsService.removeGalleryItem(
+      projectId,
+      galleryType,
+      fileId,
     );
   }
 
+  // ✅ DELETE PROJECT
   @Delete(':id')
   @UseGuards(AuthGuard('jwt'))
-  async deleteProject(@Param('id') id: string) {
+  deleteProject(@Param('id') id: string) {
     return this.projectsService.deleteProject(id);
   }
 }

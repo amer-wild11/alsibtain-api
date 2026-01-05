@@ -1,15 +1,22 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document, ObjectId, Types } from 'mongoose';
+import { Document, Types } from 'mongoose';
 
 export type JobDocument = Job & Document;
 
 @Schema({ timestamps: true })
 export class Job extends Document {
-  @Prop({ required: true })
-  title: string;
+  // Multilingual fields
+  @Prop({
+    required: true,
+    type: { ar: String, en: String },
+  })
+  title: { ar: string; en: string };
 
-  @Prop({ required: true })
-  experience: string;
+  @Prop({
+    required: true,
+    type: { ar: String, en: String },
+  })
+  experience: { ar: string; en: string };
 
   @Prop({ required: true })
   deadline: Date;
@@ -18,22 +25,37 @@ export class Job extends Document {
   category: Types.ObjectId;
 
   @Prop({ type: [{ type: Types.ObjectId, ref: 'Application' }] })
-  applications: ObjectId[];
+  applications: Types.ObjectId[];
 
-  @Prop()
-  description?: string;
+  @Prop({
+    type: { ar: String, en: String },
+    required: false,
+  })
+  description?: { ar?: string; en?: string };
 
-  @Prop()
-  location?: string;
+  @Prop({
+    type: { ar: String, en: String },
+    required: false,
+  })
+  location?: { ar?: string; en?: string };
 
-  @Prop()
-  jobType?: string;
+  @Prop({
+    type: { ar: String, en: String },
+    required: false,
+  })
+  jobType?: { ar?: string; en?: string };
 
-  @Prop()
-  workingHours?: string;
+  @Prop({
+    type: { ar: String, en: String },
+    required: false,
+  })
+  workingHours?: { ar?: string; en?: string };
 
-  @Prop()
-  workingDays?: string;
+  @Prop({
+    type: { ar: String, en: String },
+    required: false,
+  })
+  workingDays?: { ar?: string; en?: string };
 
   @Prop({ default: 1 })
   vacancy?: number;

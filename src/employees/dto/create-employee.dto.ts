@@ -1,36 +1,31 @@
+import { Transform, Type } from 'class-transformer';
 import {
   IsNotEmpty,
-  IsNumber,
   IsOptional,
-  IsString,
   ValidateNested,
+  IsNumber,
 } from 'class-validator';
-import { Type } from 'class-transformer';
-
-class EmployeeImageDto {
-  @IsString()
-  @IsNotEmpty()
-  fileId: string;
-
-  @IsString()
-  @IsNotEmpty()
-  url: string;
-}
+import { LangForm } from 'src/project-slider/dto/create-project-slider.dto';
 
 export class CreateEmployeeDto {
-  @IsString()
   @IsNotEmpty()
-  name: string;
-
-  @IsString()
-  @IsOptional()
-  position: string;
-
+  @Transform(({ value }) =>
+    typeof value === 'string' ? JSON.parse(value) : value,
+  )
   @ValidateNested()
-  @Type(() => EmployeeImageDto)
-  image: EmployeeImageDto;
+  @Type(() => LangForm)
+  name: LangForm;
 
   @IsOptional()
+  @Transform(({ value }) =>
+    typeof value === 'string' ? JSON.parse(value) : value,
+  )
+  @ValidateNested()
+  @Type(() => LangForm)
+  position?: LangForm;
+
+  @IsOptional()
+  @Transform(({ value }) => (value !== undefined ? Number(value) : value))
   @IsNumber()
   order?: number;
 }

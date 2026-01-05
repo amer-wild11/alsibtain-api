@@ -15,12 +15,25 @@ async function bootstrap() {
       transform: true,
       exceptionFactory: (errors) => {
         const fieldErrors: Record<string, string[]> = {};
-        errors.forEach((error) => {
-          const constraints = error.constraints;
-          if (constraints) {
-            fieldErrors[error.property] = Object.values(constraints);
-          }
-        });
+
+        const mapErrors = (errs: any[], parentPath = '') => {
+          errs.forEach((error) => {
+            const propertyPath = parentPath
+              ? `${parentPath}.${error.property}`
+              : error.property;
+
+            if (error.constraints) {
+              fieldErrors[propertyPath] = Object.values(error.constraints);
+            }
+
+            if (error.children && error.children.length > 0) {
+              mapErrors(error.children, propertyPath);
+            }
+          });
+        };
+
+        mapErrors(errors);
+
         return new BadRequestException({
           message: 'Validation failed',
           fieldErrors,

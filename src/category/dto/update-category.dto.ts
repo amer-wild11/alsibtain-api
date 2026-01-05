@@ -1,7 +1,17 @@
-import { IsOptional, IsString } from 'class-validator';
+import { Transform, Type } from 'class-transformer';
+import { IsOptional, IsString, ValidateNested } from 'class-validator';
+
+export class CategoryNameDto {
+  @IsString()
+  ar: string;
+
+  @IsString()
+  en: string;
+}
 
 export class UpdateCategoryDto {
   @IsOptional()
-  @IsString()
-  name: string;
+  @ValidateNested()
+  @Type(() => CategoryNameDto)
+  name?: CategoryNameDto;
 }

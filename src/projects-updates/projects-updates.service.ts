@@ -28,11 +28,14 @@ export class ProjectsUpdatesService {
 
     const skip = (page - 1) * limit;
 
-    const matchQuery = search
-      ? {
-          title: { $regex: search, $options: 'i' },
-        }
-      : {};
+    // Search supports either ar or en title
+    const matchQuery: any = {};
+    if (search) {
+      matchQuery.$or = [
+        { 'title.ar': { $regex: search, $options: 'i' } },
+        { 'title.en': { $regex: search, $options: 'i' } },
+      ];
+    }
 
     const updates = await this.updatesModel
       .aggregate([
@@ -79,7 +82,9 @@ export class ProjectsUpdatesService {
     });
 
     const updateItem = await this.updatesModel.create({
-      ...data,
+      title: data.title,
+      writtenBy: data.writtenBy,
+      description: data.description,
       thumbnail: { url, fileId },
     });
 
@@ -114,12 +119,35 @@ export class ProjectsUpdatesService {
       thumbnailData = { url, fileId };
     }
 
+    // Build update object - only update fields that are provided
+    const updateData: any = {
+      thumbnail: thumbnailData,
+    };
+
+    // Update multilingual fields only if provided
+    if (data.title) {
+      updateData.title = {
+        ar: data.title.ar ?? update.title.ar,
+        en: data.title.en ?? update.title.en,
+      };
+    }
+
+    if (data.writtenBy) {
+      updateData.writtenBy = {
+        ar: data.writtenBy.ar ?? update.writtenBy.ar,
+        en: data.writtenBy.en ?? update.writtenBy.en,
+      };
+    }
+
+    if (data.description) {
+      updateData.description = {
+        ar: data.description.ar ?? update.description.ar,
+        en: data.description.en ?? update.description.en,
+      };
+    }
+
     const updatedUpdate = await this.updatesModel
-      .findByIdAndUpdate(
-        id,
-        { ...data, thumbnail: thumbnailData },
-        { new: true, runValidators: true },
-      )
+      .findByIdAndUpdate(id, updateData, { new: true, runValidators: true })
       .exec();
 
     return {

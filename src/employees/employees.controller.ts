@@ -4,7 +4,6 @@ import {
   Delete,
   Get,
   Param,
-  Patch,
   Post,
   Put,
   Query,
@@ -12,7 +11,7 @@ import {
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
-import { EmployeesService, ReorderEmployeeDto } from './employees.service';
+import { EmployeesService } from './employees.service';
 import { CreateEmployeeDto } from './dto/create-employee.dto';
 import { UpdateEmployeeDto } from './dto/update-employee.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -25,12 +24,11 @@ export class EmployeesController {
   @Get()
   async getAll(
     @Query('keywords') keywords?: string,
-    @Query('page') page?: number,
-    @Query('limit') limit?: number,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
   ) {
     return this.employeesService.getAll({
       keywords,
-      fields: ['name'],
       page: page ? Number(page) : 1,
       limit: limit ? Number(limit) : 10,
     });
@@ -66,12 +64,5 @@ export class EmployeesController {
   @UseGuards(AuthGuard('jwt'))
   async deleteEmployee(@Param('id') id: string) {
     return this.employeesService.deleteEmployee(id);
-  }
-
-  // ------------------ REORDER EMPLOYEES ------------------
-  @Post('reorder')
-  @UseGuards(AuthGuard('jwt'))
-  async reorderEmployees(@Body() reorderData: ReorderEmployeeDto[]) {
-    return this.employeesService.reorderEmployees(reorderData);
   }
 }

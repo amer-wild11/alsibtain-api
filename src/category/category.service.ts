@@ -17,7 +17,9 @@ export class CategoryService {
   ) {}
 
   async create(data: CreateCategoryDto) {
-    const category = await this.categoryModel.create(data);
+    const category = await this.categoryModel.create({
+      name: data.name,
+    });
     return {
       message: 'Category created successfully',
       payload: category,
@@ -35,12 +37,15 @@ export class CategoryService {
 
     const matchQuery: any = {};
     if (search) {
-      matchQuery.name = { $regex: search, $options: 'i' };
+      matchQuery.$or = [
+        { 'name.ar': { $regex: search, $options: 'i' } },
+        { 'name.en': { $regex: search, $options: 'i' } },
+      ];
     }
 
     const categories = await this.categoryModel.aggregate([
       { $match: matchQuery },
-      { $sort: { name: 1 } },
+      { $sort: { 'name.en': 1 } }, // Sort by English name
       { $skip: skip },
       { $limit: limit },
       {
@@ -48,7 +53,7 @@ export class CategoryService {
           from: 'jobs',
           localField: '_id',
           foreignField: 'category',
-          as: 'jobs', // full jobs array
+          as: 'jobs',
         },
       },
       {
@@ -72,7 +77,7 @@ export class CategoryService {
   async getById(id: string) {
     if (id === 'first') {
       const [category] = await this.categoryModel.aggregate([
-        { $sort: { name: 1 } },
+        { $sort: { 'name.en': 1 } }, // Sort by English name
         { $limit: 1 },
         {
           $lookup: {
@@ -128,15 +133,30 @@ export class CategoryService {
     if (!isValidObjectId(id)) {
       throw new BadRequestException('Invalid category id');
     }
-    const category = await this.categoryModel.findByIdAndUpdate(id, data, {
-      new: true,
-    });
+
+    const category = await this.categoryModel.findById(id).exec();
     if (!category) {
       throw new NotFoundException('Category not found');
     }
+
+    // Build update object - only update fields that are provided
+    const updateData: any = {};
+
+    // Update multilingual name field only if provided
+    if (data.name) {
+      updateData.name = {
+        ar: data.name.ar ?? category.name.ar,
+        en: data.name.en ?? category.name.en,
+      };
+    }
+
+    const updatedCategory = await this.categoryModel
+      .findByIdAndUpdate(id, updateData, { new: true, runValidators: true })
+      .exec();
+
     return {
       message: 'Category updated successfully',
-      payload: category,
+      payload: updatedCategory,
     };
   }
 

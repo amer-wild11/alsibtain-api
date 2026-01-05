@@ -1,19 +1,47 @@
-import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { Transform, Type } from 'class-transformer';
+import {
+  IsString,
+  IsOptional,
+  ValidateNested,
+  IsNotEmpty,
+} from 'class-validator';
+
+export class LangForm {
+  @IsOptional()
+  @IsString()
+  ar?: string;
+
+  @IsOptional()
+  @IsString()
+  en?: string;
+}
 
 export class CreateProjectSliderDto {
-  @IsString()
   @IsNotEmpty()
-  name: string;
-  @IsString()
+  @Transform(({ value }) =>
+    typeof value === 'string' ? JSON.parse(value) : value,
+  )
+  @ValidateNested()
+  @Type(() => LangForm)
+  name: LangForm;
+
   @IsNotEmpty()
+  @IsString()
   area: string;
-  @IsString()
+
   @IsNotEmpty()
-  location: string;
-  @IsString()
+  @Transform(({ value }) =>
+    typeof value === 'string' ? JSON.parse(value) : value,
+  )
+  @ValidateNested()
+  @Type(() => LangForm)
+  location: LangForm;
+
   @IsOptional()
-  link: string;
   @IsString()
+  link?: string;
+
   @IsOptional()
-  projectLink: string;
+  @IsString()
+  projectLink?: string;
 }

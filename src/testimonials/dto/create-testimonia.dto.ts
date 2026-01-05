@@ -1,17 +1,47 @@
-import { IsString, IsOptional, IsNumber, Min, Max } from 'class-validator';
+import { Transform, Type } from 'class-transformer';
+import {
+  IsString,
+  IsOptional,
+  ValidateNested,
+  IsNotEmpty,
+} from 'class-validator';
+
+export class LangForm {
+  @IsOptional()
+  @IsString()
+  ar?: string;
+
+  @IsOptional()
+  @IsString()
+  en?: string;
+}
 
 export class CreateTestimonialDto {
-  @IsString()
-  clientType: string;
+  @IsNotEmpty()
+  @Transform(({ value }) =>
+    typeof value === 'string' ? JSON.parse(value) : value,
+  )
+  @ValidateNested()
+  @Type(() => LangForm)
+  clientType: LangForm;
 
   @IsOptional()
-  @IsString()
-  location?: string;
+  @Transform(({ value }) =>
+    typeof value === 'string' ? JSON.parse(value) : value,
+  )
+  @ValidateNested()
+  @Type(() => LangForm)
+  location?: LangForm;
 
-  @IsString()
-  testimonial: string;
+  @IsNotEmpty()
+  @Transform(({ value }) =>
+    typeof value === 'string' ? JSON.parse(value) : value,
+  )
+  @ValidateNested()
+  @Type(() => LangForm)
+  testimonial: LangForm;
 
-  @IsOptional()
+  @IsNotEmpty()
   @IsString()
-  stars?: string;
+  stars: string;
 }

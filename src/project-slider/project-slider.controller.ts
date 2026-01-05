@@ -18,6 +18,7 @@ import { ProjectSliderService } from './project-slider.service';
 import { CreateProjectSliderDto } from './dto/create-project-slider.dto';
 import { UpdateProjectDto } from 'src/projects/dto/update-project.dto';
 import { AuthGuard } from '@nestjs/passport';
+import { UpdateProjectSliderDto } from './dto/update-project-slider.dto';
 
 @Controller('project-slider')
 export class ProjectSliderController {
@@ -48,7 +49,7 @@ export class ProjectSliderController {
   @UseGuards(AuthGuard('jwt'))
   update(
     @Param('id') id: string,
-    @Body() data: UpdateProjectDto,
+    @Body() data: UpdateProjectSliderDto,
     @UploadedFile() video?: Express.Multer.File,
   ) {
     return this.projectSliderService.update(id, data, video);
