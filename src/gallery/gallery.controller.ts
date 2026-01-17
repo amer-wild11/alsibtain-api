@@ -13,7 +13,6 @@ import { GalleryService } from './gallery.service';
 import { AuthGuard } from '@nestjs/passport';
 
 @Controller('gallery')
-@UseGuards(AuthGuard('jwt'))
 export class GalleryController {
   constructor(private readonly galleryService: GalleryService) {}
 
